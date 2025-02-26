@@ -1,31 +1,38 @@
 <template>
   <div>
-    <button @click="sendNotification">Send Notification in 5 Seconds</button>
+    <h1>🔥 Your FCM Token</h1>
+    <p v-if="fcmToken">Copy this token: <br> <code>{{ fcmToken }}</code></p>
+    <p v-else>Loading FCM token...</p>
   </div>
 </template>
 
-<script setup>
-// import { ref } from "vue";
+<script>
+import { ref, onMounted } from "vue";
+import { getMessaging, getToken } from "firebase/messaging";
 
-const sendNotification = () => {
-  // Check if the browser supports notifications
-  if (!("Notification" in window)) {
-    alert("This browser does not support notifications.");
-    return;
+export default {
+  setup() {
+    const fcmToken = ref("");
+
+    onMounted(async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          const messaging = getMessaging();
+          const token = await getToken(messaging, {
+            vapidKey: "BIVwgl8OgFD_w90IN1zbB2fR7quTIwW3TA9ddS5Q-fZTMasOqsnWrqimjdzWmirb7r_e0hBm0zhM6fzqNc6siZo"
+          });
+          fcmToken.value = token;
+          console.log("🔥 FCM Token:", token);
+        } else {
+          console.log("🚫 Notification permission denied");
+        }
+      } catch (error) {
+        console.error("⚠️ Error getting FCM token:", error);
+      }
+    });
+
+    return { fcmToken };
   }
-
-  // Request permission from the user
-  Notification.requestPermission().then((permission) => {
-    if (permission === "granted") {
-      setTimeout(() => {
-        new Notification("🚀 Notification Alert!", {
-          body: "This is a scheduled notification after 5 seconds!",
-          icon: "/icon.png",
-        });
-      }, 5000); // 5 seconds delay
-    } else {
-      alert("Notification permission denied!");
-    }
-  });
 };
 </script>

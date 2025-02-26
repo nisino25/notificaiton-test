@@ -2,24 +2,29 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "./registerServiceWorker";
 
-// 🔥 Import Firebase dependencies
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken } from "firebase/messaging";
+// Firebase Imports
+import { initializeApp, getApps } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// 🔥 Firebase Configuration (Replace with your actual credentials)
+// ✅ Use your correct Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyA4jKARkIbs-W20TM_HWtM4JEvoGRp4mho",
   authDomain: "audio-memory-1a8ad.firebaseapp.com",
   projectId: "audio-memory-1a8ad",
-  storageBucket: "audio-memory-1a8ad.firebasestorage.app",
+  storageBucket: "audio-memory-1a8ad.appspot.com", // Fixed typo here
   messagingSenderId: "1017691667808",
   appId: "1:1017691667808:web:dfd6db7fba722dc8fc3205",
   measurementId: "G-Y1K15GG0J0"
 };
 
+// ✅ Prevent duplicate Firebase initialization
+let firebaseApp;
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  firebaseApp = getApps()[0];
+}
 
-// Initialize Firebase
-const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
 
 const requestNotificationPermission = async () => {
@@ -31,22 +36,6 @@ const requestNotificationPermission = async () => {
       });
 
       console.log("🔥 FCM Token:", token);
-      
-      // ✅ Auto-subscribe all users to "audio-memory" topic
-      fetch(`https://iid.googleapis.com/iid/v1/${token}/rel/topics/audio-memory`, {
-        method: "POST",
-        headers: {
-          "Authorization": `key=YOUR_SERVER_KEY`,
-          "Content-Type": "application/json"
-        }
-      }).then(response => {
-        if (response.ok) {
-          console.log("✅ Subscribed to topic: audio-memory");
-        } else {
-          console.error("❌ Failed to subscribe:", response);
-        }
-      });
-
     } else {
       console.log("🚫 Notification permission denied");
     }
@@ -54,6 +43,15 @@ const requestNotificationPermission = async () => {
     console.error("⚠️ Error getting FCM token:", error);
   }
 };
+
+// ✅ Handle messages when app is open
+onMessage(messaging, (payload) => {
+  console.log("📩 Foreground notification received:", payload);
+  new Notification(payload.notification.title, {
+    body: payload.notification.body,
+    icon: "/icon.png"
+  });
+});
 
 // Call permission function
 requestNotificationPermission();
