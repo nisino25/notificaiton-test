@@ -1,26 +1,31 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div>
+    <button @click="sendNotification">Send Notification in 5 Seconds</button>
+  </div>
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld.vue'
+<script setup>
+// import { ref } from "vue";
 
-export default {
-  name: 'App',
-  components: {
-    HelloWorld
+const sendNotification = () => {
+  // Check if the browser supports notifications
+  if (!("Notification" in window)) {
+    alert("This browser does not support notifications.");
+    return;
   }
-}
-</script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
+  // Request permission from the user
+  Notification.requestPermission().then((permission) => {
+    if (permission === "granted") {
+      setTimeout(() => {
+        new Notification("🚀 Notification Alert!", {
+          body: "This is a scheduled notification after 5 seconds!",
+          icon: "/icon.png",
+        });
+      }, 5000); // 5 seconds delay
+    } else {
+      alert("Notification permission denied!");
+    }
+  });
+};
+</script>
