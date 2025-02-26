@@ -4,7 +4,7 @@ import "./registerServiceWorker";
 
 // 🔥 Import Firebase dependencies
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken } from "firebase/messaging";
 
 // 🔥 Firebase Configuration (Replace with your actual credentials)
 const firebaseConfig = {
@@ -17,19 +17,36 @@ const firebaseConfig = {
   measurementId: "G-Y1K15GG0J0"
 };
 
-// 🔥 Initialize Firebase
+
+// Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
 
-// ✅ Function to Request Notification Permission and Get FCM Token
 const requestNotificationPermission = async () => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       const token = await getToken(messaging, {
-        vapidKey: "BIVwgl8OgFD_w90IN1zbB2fR7quTIwW3TA9ddS5Q-fZTMasOqsnWrqimjdzWmirb7r_e0hBm0zhM6fzqNc6siZo" // ✅ Using your actual VAPID key here
+        vapidKey: "BIVwgl8OgFD_w90IN1zbB2fR7quTIwW3TA9ddS5Q-fZTMasOqsnWrqimjdzWmirb7r_e0hBm0zhM6fzqNc6siZo"
       });
+
       console.log("🔥 FCM Token:", token);
+      
+      // ✅ Auto-subscribe all users to "audio-memory" topic
+      fetch(`https://iid.googleapis.com/iid/v1/${token}/rel/topics/audio-memory`, {
+        method: "POST",
+        headers: {
+          "Authorization": `key=YOUR_SERVER_KEY`,
+          "Content-Type": "application/json"
+        }
+      }).then(response => {
+        if (response.ok) {
+          console.log("✅ Subscribed to topic: audio-memory");
+        } else {
+          console.error("❌ Failed to subscribe:", response);
+        }
+      });
+
     } else {
       console.log("🚫 Notification permission denied");
     }
@@ -38,29 +55,7 @@ const requestNotificationPermission = async () => {
   }
 };
 
-// ✅ Call the function to request notification permission when the app loads
+// Call permission function
 requestNotificationPermission();
 
-// ✅ Listen for foreground notifications
-onMessage(messaging, (payload) => {
-  console.log("📩 Foreground notification received:", payload);
-  new Notification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: "/icon.png"
-  });
-});
-
-// ✅ Register the Firebase Messaging Service Worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/firebase-messaging-sw.js")
-    .then((registration) => {
-      console.log("✅ Service Worker registered successfully:", registration);
-    })
-    .catch((error) => {
-      console.error("❌ Service Worker registration failed:", error);
-    });
-}
-
-// ✅ Mount Vue App
 createApp(App).mount("#app");
